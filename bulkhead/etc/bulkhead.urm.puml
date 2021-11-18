@@ -1,0 +1,26 @@
+@startuml
+package com.iluwatar.bulkhead {
+  class App {
+    - LOGGER : Logger {static}
+    + App()
+    + main(args : String[]) {static}
+  }
+  interface Bulkhead {
+    + decorate(Runnable) : Runnable {abstract}
+  }
+  class RemoteService {
+    - LOGGER : Logger {static}
+    + RemoteService()
+    + call()
+  }
+  class SemaphoreBulkhead {
+    - semaphore : Semaphore
+    - timeout : long
+    + SemaphoreBulkhead(maxConcurrentCalls : int, timeout : long)
+    - acquirePermission()
+    + decorate(runnable : Runnable) : Runnable
+    - releasePermission()
+  }
+}
+SemaphoreBulkhead ..|> Bulkhead 
+@enduml
