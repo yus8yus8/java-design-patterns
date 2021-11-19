@@ -23,7 +23,6 @@
 
 package com.iluwatar.bulkhead;
 
-import java.time.LocalTime;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -45,11 +44,11 @@ public class App {
    * Program entry point.
    *
    * @param args command line args.
-   * @throws Exception if any error occurs.
+   * @throws InterruptedException if an InterruptedException occurs.
    */
-  public static void main(final String[] args) throws Exception {
+  public static void main(final String[] args) throws InterruptedException {
     final RemoteService remoteService = new RemoteService();
-    final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(5, 5000);
+    final Bulkhead bulkhead = new SemaphoreBulkhead(5, 5000);
     final Runnable runnable = () -> remoteService.call();
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
 
@@ -59,8 +58,7 @@ public class App {
         try {
           runnableWithBulkhead.run();
         } catch (final Exception e) {
-          System.out.println(LocalTime.now() + " " + Thread.currentThread().getName()
-                  + ": " + e.getMessage());
+          LOGGER.error("Exception: " + e.getMessage());
         }
       }, "Remote service call " + (i + 1));
       threads[i] = t;

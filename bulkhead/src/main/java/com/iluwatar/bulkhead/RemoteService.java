@@ -23,11 +23,12 @@
 
 package com.iluwatar.bulkhead;
 
-import java.time.LocalTime;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * A mocked remote service.
  */
+@Slf4j
 public class RemoteService {
 
   /**
@@ -35,11 +36,11 @@ public class RemoteService {
    */
   public void call() {
     try {
-      System.out.println(LocalTime.now() + " " + Thread.currentThread().getName() + " starts");
+      LOGGER.info("starts");
       Thread.sleep(2000);
-      System.out.println(LocalTime.now() + " " + Thread.currentThread().getName() + " finishes");
-    } catch (final Exception e) {
-      e.printStackTrace();
+      LOGGER.info("finishes");
+    } catch (final InterruptedException e) {
+      LOGGER.error("Thread interrupted: ", e);
     }
   }
 }

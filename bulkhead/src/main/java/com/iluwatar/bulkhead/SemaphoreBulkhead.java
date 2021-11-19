@@ -23,7 +23,6 @@
 
 package com.iluwatar.bulkhead;
 
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -37,13 +36,10 @@ public class SemaphoreBulkhead implements Bulkhead {
 
   private final long timeout;
 
-  private final int maxConcurrentCalls;
-
   /**
    * Creates a bulkhead with the max number of concurrent calls and timeout value.
    */
   public SemaphoreBulkhead(final int maxConcurrentCalls, final long timeout) {
-    this.maxConcurrentCalls = maxConcurrentCalls;
     this.timeout = timeout;
     this.semaphore = new Semaphore(maxConcurrentCalls, true);
   }
@@ -51,7 +47,7 @@ public class SemaphoreBulkhead implements Bulkhead {
   /**
    * {@inheritDoc}
    * @throws IllegalThreadStateException when the bulkhead is full
-   * @throws CancellationException if the thread is interrupted during permission wait
+   * @throws IllegalStateException if the thread is interrupted during permission wait
    */
   @Override
   public Runnable decorate(final Runnable runnable) {
@@ -68,11 +64,11 @@ public class SemaphoreBulkhead implements Bulkhead {
   private void acquirePermission() {
     try {
       boolean acquired = semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-      if (acquired == false) {
+      if (!acquired) {
         throw new IllegalThreadStateException("Bulkhead full of threads");
       }
     } catch (final InterruptedException e) {
-      throw new CancellationException("Bulkhead acquire permission cancelled");
+      throw new IllegalStateException("Bulkhead acquire permission cancelled", e);
     }
   }
 

@@ -30,7 +30,7 @@ public interface Bulkhead {
 
   /**
    * Decorates a runnable such that the runnable have to wait or timeout
-   * when the number of conccurent threads has reached the bulkhead limit.
+   * when the number of concurrent threads has reached the bulkhead limit.
    *
    * @param runnable the original Runnable.
    * @return a runnable which is decorated by a bulkhead.
