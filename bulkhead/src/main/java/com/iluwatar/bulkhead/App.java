@@ -30,13 +30,13 @@ import lombok.extern.slf4j.Slf4j;
  * architecture, elements of an application are isolated into pools so that if one fails, the others
  * will continue to function.
  *
- * <p>In the below example, it uses a bulkhead to control the calls to the remote service. The
+ * <p>In the below example, it uses a bulkhead to control the calls to a remote service. The
  * number of maximum concurrent calls is set to 5, and the waiting time is 5s.
  *
- * <p>20 remote service calls are called sequentially. The 1 - 5 calls should start immidiately.
- * The 6 - 10 calls should start one by one once 1 - 5 calls finishes. The 11 - 15 calls should
- * start one by one after 6 - 10 calls finishes. The 16 - 20 calls should fail after 5s waiting
- * time is over.
+ * <p>Twenty 2s remote service calls are called sequentially. The 1 - 5 calls should start
+ * immediately. The 6 - 10 calls should start one by one after 1 - 5 calls finishes. The 11 - 15
+ * calls should start one by one after 6 - 10 calls finishes. The 16 - 20 calls should fail after
+ * 5s waiting time is over.
  */
 @Slf4j
 public class App {

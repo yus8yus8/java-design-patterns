@@ -38,6 +38,9 @@ public class SemaphoreBulkhead implements Bulkhead {
 
   /**
    * Creates a bulkhead with the max number of concurrent calls and timeout value.
+   *
+   * @param maxConcurrentCalls the max number of concurrent calls the bulkhead allows.
+   * @param timeout the timeout value a call should wait.
    */
   public SemaphoreBulkhead(final int maxConcurrentCalls, final long timeout) {
     this.timeout = timeout;
