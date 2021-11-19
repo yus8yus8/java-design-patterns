@@ -50,7 +50,7 @@ public class SemaphoreBulkhead implements Bulkhead {
   /**
    * {@inheritDoc}
    * @throws IllegalThreadStateException when the bulkhead is full
-   * @throws IllegalStateException if the thread is interrupted during permission wait
+   * @throws IllegalStateException if the thread is interrupted during waiting for permission
    */
   @Override
   public Runnable decorate(final Runnable runnable) {

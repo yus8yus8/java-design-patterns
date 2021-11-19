@@ -12,7 +12,7 @@ tags:
 
 ## Intent
 
-A type of application design that is tolerant of failure. In a bulkhead architecture, elements of an application are isolated into pools so that if one fails, the others will continue to function.
+A type of application design that is tolerant of failure. In a bulkhead architecture, elements of an application are isolated into pools so that if one fails, it will not exhaust resources of others applications. The others will continue to function.
 
 ## Explanation
 
@@ -76,7 +76,7 @@ public class SemaphoreBulkhead implements Bulkhead {
   /**
    * {@inheritDoc}
    * @throws IllegalThreadStateException when the bulkhead is full
-   * @throws IllegalStateException if the thread is interrupted during permission wait
+   * @throws IllegalStateException if the thread is interrupted during waiting for permission
    */
   @Override
   public Runnable decorate(final Runnable runnable) {
@@ -136,16 +136,16 @@ Finally the app simulates the behavior when 20 threads make calls to the remote 
 ```java
 /**
  * The Bulkhead pattern is a type of application design that is tolerant of failure. In a bulkhead
- * architecture, elements of an application are isolated into pools so that if one fails, the others
- * will continue to function.
+ * architecture, elements of an application are isolated into pools so that if one fails, it will
+ * not exhaust resources of others applications.
  *
  * <p>In the below example, it uses a bulkhead to control the calls to a remote service. The
  * number of maximum concurrent calls is set to 5, and the waiting time is 5s.
  *
- * <p>Twenty 2s remote service calls are called sequentially. The 1 - 5 calls should start
+ * <p>Twenty mocked 2s remote service calls are called sequentially. The 1 - 5 calls should start
  * immediately. The 6 - 10 calls should start one by one after 1 - 5 calls finishes. The 11 - 15
- * calls should start one by one after 6 - 10 calls finishes. The 16 - 20 calls should fail after
- * 5s waiting time is over.
+ * calls should start one by one after 6 - 10 calls finishes. The 16 - 20 calls should throw
+ * "Bulkhead full of threads" exception after 5s waiting time is over.
  */
 @Slf4j
 public class App {
