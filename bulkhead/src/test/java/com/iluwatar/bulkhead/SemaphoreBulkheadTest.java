@@ -65,7 +65,7 @@ public class SemaphoreBulkheadTest {
   }
 
   @Test
-  public void throwsExceptionWhenBulkheadOverFullAfterWaitingTime() throws InterruptedException {
+  public void throwsExceptionWhenBulkheadStillFullAfterWaitingTime() throws InterruptedException {
     final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(2, 500);
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
     final AtomicReference<Exception> exception = new AtomicReference<>();
@@ -93,7 +93,7 @@ public class SemaphoreBulkheadTest {
   }
 
   @Test
-  public void shouldSuccessWhenBulkheadAvaibleAgain() throws InterruptedException {
+  public void shouldSuccessWhenBulkheadAvailableAgain() throws InterruptedException {
     final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(1, 5000);
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
     final Thread thread1 = new Thread(runnableWithBulkhead);
