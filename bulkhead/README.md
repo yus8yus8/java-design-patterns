@@ -12,7 +12,7 @@ tags:
 
 ## Intent
 
-A type of application design that is tolerant of failure. In a bulkhead architecture, elements of an application are isolated into pools so that if one fails, it will not exhaust resources of others applications. The others will continue to function.
+A type of application design that is tolerant of failure. In a bulkhead architecture, elements of an application are isolated into pools so that if one fails, it will not exhaust resources of other applications. The others will continue to function.
 
 ## Explanation
 
@@ -137,7 +137,7 @@ Finally the app simulates the behavior when 20 threads make calls to the remote 
 /**
  * The Bulkhead pattern is a type of application design that is tolerant of failure. In a bulkhead
  * architecture, elements of an application are isolated into pools so that if one fails, it will
- * not exhaust resources of others applications.
+ * not exhaust resources of other applications.
  *
  * <p>In the below example, it uses a bulkhead to control the calls to a remote service. The
  * number of maximum concurrent calls is set to 5, and the waiting time is 5s.

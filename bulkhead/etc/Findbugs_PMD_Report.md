@@ -1,8 +1,8 @@
 ## FindBugs and PMD report
 
-This is an feature issue of java design pattern project, so I only run the report for this feature's module.
+This is an design pattern feature issue, so I only run the report for this feature's module.
 
-I use an Intellij plugin - QAPlug to run Findbugs and PMD report.
+I used an Intellij plugin - QAPlug to run Findbugs and PMD report.
 
 There is no error.
 
