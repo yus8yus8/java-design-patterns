@@ -24,6 +24,7 @@
 package com.iluwatar.bulkhead;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,52 +33,70 @@ import org.junit.jupiter.api.Test;
 /**
  * Tests {@link SemaphoreBulkhead}.
  */
-public class SemaphoreBulkheadTest {
+class SemaphoreBulkheadTest {
   private RemoteService remoteService;
   private Runnable runnable;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     remoteService = new RemoteService();
     runnable = () -> remoteService.call();
   }
 
   @Test
-  public void shouldSuccessWhenBulkheadNotFull() throws InterruptedException {
+  void shouldSuccessWhenBulkheadNotFull() throws InterruptedException {
     final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(2, 1000);
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
-    final Thread thread1 = new Thread(runnableWithBulkhead);
+
+    final AtomicReference<Exception> exception1 = new AtomicReference<>();
+
+    final Thread thread1 = new Thread(
+            constructRunnableWithException(runnableWithBulkhead, exception1));
+
     thread1.start();
     thread1.join();
+
+    assertNull(exception1.get());
   }
 
   @Test
-  public void shouldSuccessWhenBulkheadJustFull() throws InterruptedException {
+  void shouldSuccessWhenBulkheadJustFull() throws InterruptedException {
     final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(2, 5000);
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
-    final Thread thread1 = new Thread(runnableWithBulkhead);
-    final Thread thread2 = new Thread(runnableWithBulkhead);
+
+    final AtomicReference<Exception> exception1 = new AtomicReference<>();
+    final AtomicReference<Exception> exception2 = new AtomicReference<>();
+
+    final Thread thread1 = new Thread(
+            constructRunnableWithException(runnableWithBulkhead, exception1));
+    final Thread thread2 = new Thread(
+            constructRunnableWithException(runnableWithBulkhead, exception2));
+
     thread1.start();
     thread2.start();
 
     thread1.join();
     thread2.join();
+
+    assertNull(exception1.get());
+    assertNull(exception2.get());
   }
 
   @Test
-  public void throwsExceptionWhenBulkheadStillFullAfterWaitingTime() throws InterruptedException {
+  void throwsExceptionWhenBulkheadStillFullAfterWaitingTime() throws InterruptedException {
     final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(2, 500);
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
-    final AtomicReference<Exception> exception = new AtomicReference<>();
-    final Thread thread1 = new Thread(runnableWithBulkhead);
-    final Thread thread2 = new Thread(runnableWithBulkhead);
-    final Thread thread3 = new Thread(() -> {
-      try {
-        runnableWithBulkhead.run();
-      } catch (final IllegalThreadStateException e) {
-        exception.set(e);
-      }
-    });
+
+    final AtomicReference<Exception> exception1 = new AtomicReference<>();
+    final AtomicReference<Exception> exception2 = new AtomicReference<>();
+    final AtomicReference<Exception> exception3 = new AtomicReference<>();
+
+    final Thread thread1 = new Thread(
+            constructRunnableWithException(runnableWithBulkhead, exception1));
+    final Thread thread2 = new Thread(
+            constructRunnableWithException(runnableWithBulkhead, exception2));
+    final Thread thread3 = new Thread(
+            constructRunnableWithException(runnableWithBulkhead, exception3));
 
     thread1.start();
     Thread.sleep(50);
@@ -89,20 +108,43 @@ public class SemaphoreBulkheadTest {
     thread2.join();
     thread3.join();
 
-    assertEquals(exception.get().getMessage(), "Bulkhead full of threads");
+    assertNull(exception1.get());
+    assertNull(exception2.get());
+    assertEquals(exception3.get().getMessage(), "Bulkhead full of threads");
   }
 
   @Test
-  public void shouldSuccessWhenBulkheadAvailableAgain() throws InterruptedException {
+  void shouldSuccessWhenBulkheadAvailableAgain() throws InterruptedException {
     final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(1, 5000);
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
-    final Thread thread1 = new Thread(runnableWithBulkhead);
-    final Thread thread2 = new Thread(runnableWithBulkhead);
+
+    final AtomicReference<Exception> exception1 = new AtomicReference<>();
+    final AtomicReference<Exception> exception2 = new AtomicReference<>();
+
+    final Thread thread1 = new Thread(
+            constructRunnableWithException(runnableWithBulkhead, exception1));
+    final Thread thread2 = new Thread(
+            constructRunnableWithException(runnableWithBulkhead, exception2));
+
     thread1.start();
     Thread.sleep(4000);
     thread2.start();
 
     thread1.join();
     thread2.join();
+
+    assertNull(exception1.get());
+    assertNull(exception2.get());
+  }
+
+  private Runnable constructRunnableWithException(final Runnable runnable,
+                                                  final AtomicReference<Exception> exception) {
+    return () -> {
+      try {
+        runnable.run();
+      } catch (final Exception e) {
+        exception.set(e);
+      }
+    };
   }
 }
