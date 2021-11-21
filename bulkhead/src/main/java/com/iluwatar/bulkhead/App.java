@@ -30,13 +30,14 @@ import lombok.extern.slf4j.Slf4j;
  * architecture, elements of an application are isolated into pools so that if one fails, it will
  * not exhaust resources of other applications.
  *
- * <p>In the below example, it uses a bulkhead to control the calls to a remote service. The
- * number of maximum concurrent calls is set to 5, and the waiting time is 5s.
+ * <p>In the below example, it uses a bulkhead to limit the thread resources used by a remote
+ * service call. The number of the maximum concurrent calls is set to 3, and the waiting time for
+ * each call is within 5s.
  *
- * <p>Twenty mocked 2s remote service calls are called sequentially. The 1 - 5 calls should start
- * immediately. The 6 - 10 calls should start one by one after 1 - 5 calls finishes. The 11 - 15
- * calls should start one by one after 6 - 10 calls finishes. The 16 - 20 calls should throw
- * "Bulkhead full of threads" exception after 5s waiting time is over.
+ * <p>12 mocked 2s remote service calls start sequentially. The 1 - 3 calls should start
+ * immediately. The 4 - 6 calls should start one by one after the 1 - 3 calls finish. The 7 - 9
+ * calls should start one by one after the 4 - 6 calls finish. The 10 - 12 calls should throw
+ * "Bulkhead full of threads" exception after the 5s waiting time is over.
  */
 @Slf4j
 public class App {
@@ -48,12 +49,12 @@ public class App {
    */
   public static void main(final String[] args) throws InterruptedException {
     final RemoteService remoteService = new RemoteService();
-    final Bulkhead bulkhead = new SemaphoreBulkhead(5, 5000);
+    final Bulkhead bulkhead = new SemaphoreBulkhead(3, 5000);
     final Runnable runnable = () -> remoteService.call();
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
 
-    final Thread[] threads = new Thread[20];
-    for (int i = 0; i < 20; i++) {
+    final Thread[] threads = new Thread[12];
+    for (int i = 0; i < 12; i++) {
       final Thread t = new Thread(() -> {
         try {
           runnableWithBulkhead.run();

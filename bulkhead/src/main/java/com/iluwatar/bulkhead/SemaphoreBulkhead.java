@@ -37,10 +37,10 @@ public class SemaphoreBulkhead implements Bulkhead {
   private final long timeout;
 
   /**
-   * Creates a bulkhead with the max number of concurrent calls and timeout value.
+   * Creates a bulkhead with the max number of concurrent calls and a timeout value.
    *
    * @param maxConcurrentCalls the max number of concurrent calls the bulkhead allows.
-   * @param timeout the timeout value a call should wait.
+   * @param timeout the timeout value a call should wait when the bulkhead is full.
    */
   public SemaphoreBulkhead(final int maxConcurrentCalls, final long timeout) {
     this.timeout = timeout;
@@ -49,7 +49,7 @@ public class SemaphoreBulkhead implements Bulkhead {
 
   /**
    * {@inheritDoc}
-   * @throws IllegalThreadStateException when the bulkhead is full
+   * @throws IllegalThreadStateException when the bulkhead is full after a timeout value
    * @throws IllegalStateException if the thread is interrupted during waiting for permission
    */
   @Override

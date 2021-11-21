@@ -29,8 +29,10 @@ package com.iluwatar.bulkhead;
 public interface Bulkhead {
 
   /**
-   * Decorates a runnable such that the runnable have to wait or timeout
-   * when the number of concurrent threads has reached the bulkhead limit.
+   * Decorates a runnable such that the thread resource used by a runnable is limited by
+   * the bulkhead. If the number of concurrent threads has reached the bulkhead limit,
+   * the runnable thread has to wait. If the waiting time is above the timeout value,
+   * it should fail, without consuming the thread resource anymore.
    *
    * @param runnable the original Runnable.
    * @return a runnable which is decorated by a bulkhead.

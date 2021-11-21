@@ -7,7 +7,6 @@ categories: Behavioral
 language: en
 tags:
  - Cloud distributed
- - Availability
 ---
 
 ## Intent
@@ -34,14 +33,19 @@ Wikipedia says
 **Programmatic Example**
 
 The `Bulkhead` interface has a method to decorate runnable with the bulkhead constraint.
-It limits the number of concurrent call. If one runnable blocks, it will not exhaust all the threads in the server.
+It limits the max number of concurrent calls.
 
 ```java
+/**
+ * A bulkhead can be used to decorate runnable and limit the number of parallel threads.
+ */
 public interface Bulkhead {
 
   /**
-   * Decorates a runnable such that the runnable have to wait or timeout
-   * when the number of concurrent threads has reached the bulkhead limit.
+   * Decorates a runnable such that the thread resource used by a runnable is limited by
+   * the bulkhead. If the number of concurrent threads has reached the bulkhead limit,
+   * the runnable thread has to wait. If the waiting time is above the timeout value,
+   * it should fail, without consuming the thread resource anymore.
    *
    * @param runnable the original Runnable.
    * @return a runnable which is decorated by a bulkhead.
@@ -63,10 +67,10 @@ public class SemaphoreBulkhead implements Bulkhead {
   private final long timeout;
 
   /**
-   * Creates a bulkhead with the max number of concurrent calls and timeout value.
+   * Creates a bulkhead with the max number of concurrent calls and a timeout value.
    *
    * @param maxConcurrentCalls the max number of concurrent calls the bulkhead allows.
-   * @param timeout the timeout value a call should wait.
+   * @param timeout the timeout value a call should wait when the bulkhead is full.
    */
   public SemaphoreBulkhead(final int maxConcurrentCalls, final long timeout) {
     this.timeout = timeout;
@@ -75,7 +79,7 @@ public class SemaphoreBulkhead implements Bulkhead {
 
   /**
    * {@inheritDoc}
-   * @throws IllegalThreadStateException when the bulkhead is full
+   * @throws IllegalThreadStateException when the bulkhead is full after a timeout value
    * @throws IllegalStateException if the thread is interrupted during waiting for permission
    */
   @Override
@@ -131,7 +135,7 @@ public class RemoteService {
 }
 ```
 
-Finally the app simulates the behavior when 20 threads make calls to the remote service.
+Finally the app simulates the behavior when 12 threads make calls to the remote service.
 
 ```java
 /**
@@ -139,13 +143,14 @@ Finally the app simulates the behavior when 20 threads make calls to the remote 
  * architecture, elements of an application are isolated into pools so that if one fails, it will
  * not exhaust resources of other applications.
  *
- * <p>In the below example, it uses a bulkhead to control the calls to a remote service. The
- * number of maximum concurrent calls is set to 5, and the waiting time is 5s.
+ * <p>In the below example, it uses a bulkhead to limit the thread resources used by a remote
+ * service call. The number of the maximum concurrent calls is set to 3, and the waiting time for
+ * each call is within 5s.
  *
- * <p>Twenty mocked 2s remote service calls are called sequentially. The 1 - 5 calls should start
- * immediately. The 6 - 10 calls should start one by one after 1 - 5 calls finishes. The 11 - 15
- * calls should start one by one after 6 - 10 calls finishes. The 16 - 20 calls should throw
- * "Bulkhead full of threads" exception after 5s waiting time is over.
+ * <p>12 mocked 2s remote service calls start sequentially. The 1 - 3 calls should start
+ * immediately. The 4 - 6 calls should start one by one after the 1 - 3 calls finish. The 7 - 9
+ * calls should start one by one after the 4 - 6 calls finish. The 10 - 12 calls should throw
+ * "Bulkhead full of threads" exception after the 5s waiting time is over.
  */
 @Slf4j
 public class App {
@@ -157,12 +162,12 @@ public class App {
    */
   public static void main(final String[] args) throws InterruptedException {
     final RemoteService remoteService = new RemoteService();
-    final Bulkhead bulkhead = new SemaphoreBulkhead(5, 5000);
+    final Bulkhead bulkhead = new SemaphoreBulkhead(3, 5000);
     final Runnable runnable = () -> remoteService.call();
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
 
-    final Thread[] threads = new Thread[20];
-    for (int i = 0; i < 20; i++) {
+    final Thread[] threads = new Thread[12];
+    for (int i = 0; i < 12; i++) {
       final Thread t = new Thread(() -> {
         try {
           runnableWithBulkhead.run();
@@ -185,41 +190,27 @@ public class App {
 The App log output:
 
 ```java
-20:31:40.613 [Remote service call 1] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:40.658 [Remote service call 2] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:40.709 [Remote service call 3] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:40.761 [Remote service call 4] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:40.813 [Remote service call 5] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:42.621 [Remote service call 1] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:42.622 [Remote service call 6] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:42.661 [Remote service call 2] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:42.662 [Remote service call 7] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:42.714 [Remote service call 3] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:42.715 [Remote service call 8] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:42.765 [Remote service call 4] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:42.766 [Remote service call 9] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:42.819 [Remote service call 5] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:42.819 [Remote service call 10] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:44.625 [Remote service call 6] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:44.627 [Remote service call 11] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:44.666 [Remote service call 7] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:44.667 [Remote service call 12] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:44.715 [Remote service call 8] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:44.716 [Remote service call 13] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:44.768 [Remote service call 9] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:44.769 [Remote service call 14] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:44.822 [Remote service call 10] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:44.822 [Remote service call 15] INFO com.iluwatar.bulkhead.RemoteService - starts
-20:31:46.404 [Remote service call 16] ERROR com.iluwatar.bulkhead.App - Exception: Bulkhead full of threads
-20:31:46.448 [Remote service call 17] ERROR com.iluwatar.bulkhead.App - Exception: Bulkhead full of threads
-20:31:46.504 [Remote service call 18] ERROR com.iluwatar.bulkhead.App - Exception: Bulkhead full of threads
-20:31:46.555 [Remote service call 19] ERROR com.iluwatar.bulkhead.App - Exception: Bulkhead full of threads
-20:31:46.604 [Remote service call 20] ERROR com.iluwatar.bulkhead.App - Exception: Bulkhead full of threads
-20:31:46.628 [Remote service call 11] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:46.667 [Remote service call 12] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:46.720 [Remote service call 13] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:46.771 [Remote service call 14] INFO com.iluwatar.bulkhead.RemoteService - finishes
-20:31:46.825 [Remote service call 15] INFO com.iluwatar.bulkhead.RemoteService - finishes
+07:43:44.399 [Remote service call 1] INFO com.iluwatar.bulkhead.RemoteService - starts
+07:43:44.442 [Remote service call 2] INFO com.iluwatar.bulkhead.RemoteService - starts
+07:43:44.496 [Remote service call 3] INFO com.iluwatar.bulkhead.RemoteService - starts
+07:43:46.412 [Remote service call 1] INFO com.iluwatar.bulkhead.RemoteService - finishes
+07:43:46.413 [Remote service call 4] INFO com.iluwatar.bulkhead.RemoteService - starts
+07:43:46.446 [Remote service call 2] INFO com.iluwatar.bulkhead.RemoteService - finishes
+07:43:46.447 [Remote service call 5] INFO com.iluwatar.bulkhead.RemoteService - starts
+07:43:46.497 [Remote service call 3] INFO com.iluwatar.bulkhead.RemoteService - finishes
+07:43:46.497 [Remote service call 6] INFO com.iluwatar.bulkhead.RemoteService - starts
+07:43:48.414 [Remote service call 4] INFO com.iluwatar.bulkhead.RemoteService - finishes
+07:43:48.415 [Remote service call 7] INFO com.iluwatar.bulkhead.RemoteService - starts
+07:43:48.448 [Remote service call 5] INFO com.iluwatar.bulkhead.RemoteService - finishes
+07:43:48.449 [Remote service call 8] INFO com.iluwatar.bulkhead.RemoteService - starts
+07:43:48.499 [Remote service call 6] INFO com.iluwatar.bulkhead.RemoteService - finishes
+07:43:48.499 [Remote service call 9] INFO com.iluwatar.bulkhead.RemoteService - starts
+07:43:49.875 [Remote service call 10] ERROR com.iluwatar.bulkhead.App - Exception: Bulkhead full of threads
+07:43:49.917 [Remote service call 11] ERROR com.iluwatar.bulkhead.App - Exception: Bulkhead full of threads
+07:43:49.973 [Remote service call 12] ERROR com.iluwatar.bulkhead.App - Exception: Bulkhead full of threads
+07:43:50.420 [Remote service call 7] INFO com.iluwatar.bulkhead.RemoteService - finishes
+07:43:50.450 [Remote service call 8] INFO com.iluwatar.bulkhead.RemoteService - finishes
+07:43:50.500 [Remote service call 9] INFO com.iluwatar.bulkhead.RemoteService - finishes
 ```
 
 ## Class diagram
