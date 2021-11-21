@@ -37,12 +37,19 @@ class SemaphoreBulkheadTest {
   private RemoteService remoteService;
   private Runnable runnable;
 
+  /**
+   * This method sets up the remoteService and runnable for this test class.
+   * It is executed before the execution of every test.
+   */
   @BeforeEach
   void setUp() {
     remoteService = new RemoteService();
     runnable = () -> remoteService.call();
   }
 
+  /**
+   * Test one thread should succeed without exception when the capacity of bulkhead is two.
+   */
   @Test
   void shouldSuccessWhenBulkheadNotFull() throws InterruptedException {
     final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(2, 1000);
@@ -59,6 +66,9 @@ class SemaphoreBulkheadTest {
     assertNull(exception1.get());
   }
 
+  /**
+   * Test two threads should succeed without exceptions when the capacity of bulkhead is two.
+   */
   @Test
   void shouldSuccessWhenBulkheadJustFull() throws InterruptedException {
     final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(2, 5000);
@@ -82,37 +92,46 @@ class SemaphoreBulkheadTest {
     assertNull(exception2.get());
   }
 
+  /**
+   * Bulkhead has a capacity of one and timeout value 0.5s.
+   * Start two threads around the same time.
+   * Each thread will run for 2s.
+   * Test the first thread should succeed without exceptions.
+   * Test the second thread should fail with "Bulkhead full of threads" exception because after
+   * waiting 0.5s, the first thread is still not finished.
+   */
   @Test
   void throwsExceptionWhenBulkheadStillFullAfterWaitingTime() throws InterruptedException {
-    final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(2, 500);
+    final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(1, 500);
     final Runnable runnableWithBulkhead = bulkhead.decorate(runnable);
 
     final AtomicReference<Exception> exception1 = new AtomicReference<>();
     final AtomicReference<Exception> exception2 = new AtomicReference<>();
-    final AtomicReference<Exception> exception3 = new AtomicReference<>();
 
     final Thread thread1 = new Thread(
             constructRunnableWithException(runnableWithBulkhead, exception1));
     final Thread thread2 = new Thread(
             constructRunnableWithException(runnableWithBulkhead, exception2));
-    final Thread thread3 = new Thread(
-            constructRunnableWithException(runnableWithBulkhead, exception3));
 
     thread1.start();
     Thread.sleep(50);
     thread2.start();
-    Thread.sleep(50);
-    thread3.start();
 
     thread1.join();
     thread2.join();
-    thread3.join();
 
     assertNull(exception1.get());
-    assertNull(exception2.get());
-    assertEquals(exception3.get().getMessage(), "Bulkhead full of threads");
+    assertEquals(exception2.get().getMessage(), "Bulkhead full of threads");
   }
 
+  /**
+   * Bulkhead has a capacity of one and timeout value 5s.
+   * Start two threads around the same time.
+   * Each thread will run for 2s.
+   * Test the first thread should succeed without exception.
+   * Test the second thread should succeed without exception because it waits 2s
+   * for the first thread to finish and it is still within the timeout value 5s.
+   */
   @Test
   void shouldSuccessWhenBulkheadAvailableAgain() throws InterruptedException {
     final SemaphoreBulkhead bulkhead = new SemaphoreBulkhead(1, 5000);
@@ -127,7 +146,7 @@ class SemaphoreBulkheadTest {
             constructRunnableWithException(runnableWithBulkhead, exception2));
 
     thread1.start();
-    Thread.sleep(4000);
+    Thread.sleep(50);
     thread2.start();
 
     thread1.join();

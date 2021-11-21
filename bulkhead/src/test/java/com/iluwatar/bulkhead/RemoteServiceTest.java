@@ -32,6 +32,9 @@ import org.junit.jupiter.api.Test;
  */
 class RemoteServiceTest {
 
+  /**
+   * Test the mocked remote service call is successful without exception.
+   */
   @Test
   void testSuccessfulCall() {
     final RemoteService remoteService = new RemoteService();
