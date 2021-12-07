@@ -1,0 +1,109 @@
+@startuml
+package com.iluwatar.optimistic.concurrency {
+  class App {
+    - DB_URL : String {static}
+    - LOGGER : Logger {static}
+    + App()
+    - createDataSource() : DataSource {static}
+    - createSchema(dataSource : DataSource) {static}
+    - deleteSchema(dataSource : DataSource) {static}
+    + main(args : String[]) {static}
+  }
+  class Customer {
+    - firstName : String
+    - id : int
+    - lastName : String
+    + Customer(id : int, firstName : String, lastName : String)
+    + builder() : CustomerBuilder {static}
+    # canEqual(other : Object) : boolean
+    + equals(o : Object) : boolean
+    + getFirstName() : String
+    + getId() : int
+    + getLastName() : String
+    + hashCode() : int
+    + setFirstName(firstName : String)
+    + setId(id : int)
+    + setLastName(lastName : String)
+    + toString() : String
+  }
+  class CustomerBuilder {
+    - firstName : String
+    - id : int
+    - lastName : String
+    ~ CustomerBuilder()
+    + build() : Customer
+    + firstName(firstName : String) : CustomerBuilder
+    + id(id : int) : CustomerBuilder
+    + lastName(lastName : String) : CustomerBuilder
+    + toString() : String
+  }
+  interface CustomerDao {
+    + create(CustomerDto) {abstract}
+    + deleteById(int) {abstract}
+    + getById(int) : Optional<CustomerDto> {abstract}
+    + update(CustomerDto) {abstract}
+  }
+  class CustomerDto {
+    - firstName : String
+    - id : int
+    - lastName : String
+    - version : int
+    + CustomerDto(id : int, firstName : String, lastName : String, version : int)
+    + builder() : CustomerDtoBuilder {static}
+    # canEqual(other : Object) : boolean
+    + equals(o : Object) : boolean
+    + getFirstName() : String
+    + getId() : int
+    + getLastName() : String
+    + getVersion() : int
+    + hashCode() : int
+    + setFirstName(firstName : String)
+    + setId(id : int)
+    + setLastName(lastName : String)
+    + setVersion(version : int)
+    + toString() : String
+  }
+  class CustomerDtoBuilder {
+    - firstName : String
+    - id : int
+    - lastName : String
+    - version : int
+    ~ CustomerDtoBuilder()
+    + build() : CustomerDto
+    + firstName(firstName : String) : CustomerDtoBuilder
+    + id(id : int) : CustomerDtoBuilder
+    + lastName(lastName : String) : CustomerDtoBuilder
+    + toString() : String
+    + version(version : int) : CustomerDtoBuilder
+  }
+  class CustomerSchemaSqlUtils {
+    + CREATE_SCHEMA_SQL : String {static}
+    + DELETE_SCHEMA_SQL : String {static}
+    - CustomerSchemaSqlUtils()
+  }
+  class CustomerService {
+    - LOGGER : Logger {static}
+    - customerDao : DbCustomerDao
+    + CustomerService(customerDao : DbCustomerDao)
+    + create(customer : Customer)
+    + deleteCustomerById(id : int)
+    + getCustomerById(id : int) : Optional<Customer>
+    + update(customer : Customer)
+  }
+  class DbCustomerDao {
+    - LOGGER : Logger {static}
+    - dataSource : DataSource
+    + DbCustomerDao(dataSource : DataSource)
+    + create(customer : CustomerDto)
+    - createCustomer(resultSet : ResultSet) : CustomerDto
+    + deleteById(id : int)
+    + getById(id : int) : Optional<CustomerDto>
+    - getConnection() : Connection
+    + update(customer : CustomerDto)
+  }
+}
+CustomerService -->  "-customerDao" DbCustomerDao
+CustomerBuilder ..+ Customer
+CustomerDtoBuilder ..+ CustomerDto
+DbCustomerDao ..|> CustomerDao 
+@enduml
